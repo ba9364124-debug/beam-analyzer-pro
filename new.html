@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu-Sim Civil Pro | Eng. Bakr Abdullah Ahmed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+        body { font-family: 'Tajawal', sans-serif; transition: all 0.3s; }
+        canvas { width: 100%; height: auto; display: block; }
+        .input-card { @apply bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700; }
+        .label-style { @apply block text-sm font-bold mb-1 text-slate-600 dark:text-slate-400; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-2 md:p-6">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-md border-b-4 border-indigo-500">
+            <div class="text-right">
+                <h1 class="text-3xl font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                    <span class="bg-indigo-600 text-white px-3 py-1 rounded-lg">Edu-Sim</span> Civil Pro v2.0
+                </h1>
+                <p class="text-slate-500 font-bold mt-1">تطوير المهندس: <span class="text-slate-800 dark:text-white">بكر عبدالله احمد</span></p>
+            </div>
+            <button id="themeToggle" class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-700 hover:scale-105 transition-transform">
+                🌙 / ☀️
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Sidebar: Controls -->
+            <div class="lg:col-span-4 space-y-4">
+                
+                <!-- Inputs -->
+                <div class="input-card">
+                    <h2 class="text-lg font-black mb-4 border-b pb-2 text-indigo-500">المدخلات الأساسية</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="label-style">طول الكمرة (L) - متر</label>
+                            <input type="number" id="inpL" value="10" step="0.5" class="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 outline-none focus:ring-2 ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="label-style">حمل مركز (P) - kN</label>
+                            <input type="number" id="inpP" value="40" class="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600">
+                        </div>
+                        <div>
+                            <label class="label-style">حمل موزّع (w) - kN/m</label>
+                            <input type="number" id="inpW" value="10" class="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="label-style">موقع الحمل المركز (x): <span id="valX" class="text-indigo-600">5</span> م</label>
+                        <input type="range" id="inpX" min="0" max="10" step="0.1" class="w-full accent-indigo-600">
+                    </div>
+                </div>
+
+                <!-- Section Database -->
+                <div class="input-card">
+                    <h2 class="text-lg font-black mb-4 border-b pb-2 text-emerald-500">قاعدة بيانات القطاعات (Sections)</h2>
+                    <select id="inpSection" class="w-full p-3 rounded-xl border dark:bg-slate-700 dark:border-slate-600 font-bold outline-none">
+                        <option value="15">Custom Section (Default)</option>
+                        <option value="20">IPE 200 (Steel)</option>
+                        <option value="30">IPE 300 (Steel)</option>
+                        <option value="40">HEB 400 (Heavy Steel)</option>
+                        <option value="60">Concrete Beam (600mm)</option>
+                    </select>
+                </div>
+
+                <!-- Results Table -->
+                <div class="input-card bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200">
+                    <h2 class="text-lg font-black mb-3">النتائج التحليلية</h2>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span>Reaction R<sub>A</sub>:</span> <b id="resRa">0</b></div>
+                        <div class="flex justify-between"><span>Reaction R<sub>B</sub>:</span> <b id="resRb">0</b></div>
+                        <div class="flex justify-between text-blue-600 font-bold"><span>Max Shear (V<sub>max</sub>):</span> <b id="resVmax">0</b></div>
+                        <div class="flex justify-between text-emerald-600 font-bold"><span>Max Moment (M<sub>max</sub>):</span> <b id="resMmax">0</b></div>
+                    </div>
+                </div>
+
+                <button id="btnAnim" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 shadow-lg transform transition active:scale-95">
+                    تشغيل المحاكاة الحركية
+                </button>
+            </div>
+
+            <!-- Main Panel: Graphics -->
+            <div class="lg:col-span-8 space-y-6">
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <canvas id="mainCanvas" width="800" height="650"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 mb-6 text-center">
+            <div class="inline-block px-12 py-4 bg-indigo-600 text-white rounded-full shadow-2xl">
+                <p class="text-lg font-bold italic text-indigo-100">بكل فخر، تم التصميم والبرمجة بواسطة</p>
+                <h3 class="text-2xl font-black">المهندس بكر عبدالله احمد</h3>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const inpL = document.getElementById('inpL');
+        const inpP = document.getElementById('inpP');
+        const inpW = document.getElementById('inpW');
+        const inpX = document.getElementById('inpX');
+        const inpSection = document.getElementById('inpSection');
+        const valX = document.getElementById('valX');
+        const btnAnim = document.getElementById('btnAnim');
+
+        let isAnimating = false;
+        let animDir = 1;
+
+        // Dark Mode
+        document.getElementById('themeToggle').onclick = () => document.documentElement.classList.toggle('dark');
+
+        function calculate() {
+            const L = parseFloat(inpL.value);
+            const P = parseFloat(inpP.value);
+            const W = parseFloat(inpW.value);
+            const x = parseFloat(inpX.value);
+            inpX.max = L;
+            valX.innerText = x.toFixed(1);
+
+            // Reactions (Simply Supported)
+            // Ra = (P*(L-x)/L) + (W*L/2)
+            const Ra = (P * (L - x) / L) + (W * L / 2);
+            const Rb = (P * x / L) + (W * L / 2);
+
+            // Max Values for Display
+            const Vmax = Math.max(Ra, Rb);
+            // Approx Max Moment (Center for UDL, At x for P)
+            const Mmax = (P * x * (L-x) / L) + (W * L * L / 8);
+
+            document.getElementById('resRa').innerText = Ra.toFixed(2) + " kN";
+            document.getElementById('resRb').innerText = Rb.toFixed(2) + " kN";
+            document.getElementById('resVmax').innerText = Vmax.toFixed(2) + " kN";
+            document.getElementById('resMmax').innerText = Mmax.toFixed(2) + " kNm";
+
+            draw(L, P, W, x, Ra, Rb);
+        }
+
+        function draw(L, P, W, xP, Ra, Rb) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const isDark = document.documentElement.classList.contains('dark');
+            const mainColor = isDark ? '#f8fafc' : '#1e293b';
+            
+            const margin = 80;
+            const width = canvas.width - margin * 2;
+            const scaleX = width / L;
+            const beamY = 120;
+            const sfdY = 320;
+            const bmdY = 540;
+
+            // 1. Draw Beam (Based on Section)
+            const sectionDepth = parseFloat(inpSection.value);
+            ctx.fillStyle = isDark ? '#334155' : '#e2e8f0';
+            ctx.fillRect(margin, beamY - sectionDepth/2, width, sectionDepth);
+            ctx.strokeStyle = mainColor;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(margin, beamY - sectionDepth/2, width, sectionDepth);
+
+            // Supports
+            ctx.fillStyle = mainColor;
+            ctx.beginPath(); // A
+            ctx.moveTo(margin, beamY + sectionDepth/2); ctx.lineTo(margin-15, beamY+sectionDepth/2+20); ctx.lineTo(margin+15, beamY+sectionDepth/2+20); ctx.fill();
+            ctx.beginPath(); // B
+            ctx.moveTo(margin+width, beamY + sectionDepth/2); ctx.lineTo(margin+width-15, beamY+sectionDepth/2+20); ctx.lineTo(margin+width+15, beamY+sectionDepth/2+20); ctx.fill();
+
+            // 2. Draw UDL (w)
+            if(W > 0) {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1;
+                for(let i=0; i<=width; i+=20) {
+                    drawArrow(margin+i, beamY-60, margin+i, beamY - sectionDepth/2 - 2, '#f59e0b', 1, 5);
+                }
+                ctx.beginPath(); ctx.moveTo(margin, beamY-60); ctx.lineTo(margin+width, beamY-60); ctx.stroke();
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = 'bold 12px Tajawal';
+                ctx.fillText(`UDL: ${W} kN/m`, margin + width/2, beamY - 70);
+            }
+
+            // 3. Draw Point Load (P)
+            const pX = margin + xP * scaleX;
+            drawArrow(pX, beamY - 100, pX, beamY - sectionDepth/2 - 2, '#6366f1', 4, 12);
+            ctx.fillStyle = '#6366f1';
+            ctx.font = 'black 16px Tajawal';
+            ctx.fillText(`P=${P}kN`, pX, beamY - 110);
+
+            // 4. SFD (Shear Force Diagram)
+            ctx.strokeStyle = mainColor;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(margin, sfdY); ctx.lineTo(margin+width, sfdY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#3b82f6';
+            ctx.moveTo(margin, sfdY);
+            
+            const vScale = 60 / (Ra + Rb + 1); // scaling SFD
+            for(let i=0; i<=L; i+=0.1) {
+                let v = Ra - (W * i);
+                if (i > xP) v -= P;
+                ctx.lineTo(margin + i * scaleX, sfdY - v * vScale);
+            }
+            ctx.lineTo(margin + width, sfdY);
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillText("SFD (kN)", margin - 40, sfdY);
+
+            // 5. BMD (Bending Moment Diagram)
+            ctx.strokeStyle = mainColor;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(margin, bmdY); ctx.lineTo(margin+width, bmdY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3;
+            ctx.moveTo(margin, bmdY);
+            
+            // Moment Calculation at each point: M = Ra*x - W*x^2/2 - (P*(x-xP) if x>xP)
+            let maxM = (Ra * L/2); // for scale
+            const mScale = 100 / (maxM * 1.5 + 10);
+
+            for(let i=0; i<=L; i+=0.1) {
+                let m = Ra * i - (W * i * i / 2);
+                if (i > xP) m -= P * (i - xP);
+                ctx.lineTo(margin + i * scaleX, bmdY - m * mScale);
+            }
+            ctx.lineTo(margin + width, bmdY);
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.1)';
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#10b981';
+            ctx.fillText("BMD (kNm)", margin - 40, bmdY);
+        }
+
+        function drawArrow(x1, y1, x2, y2, color, lw, h) {
+            ctx.beginPath();
+            ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.fillStyle = color;
+            ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+            const angle = Math.atan2(y2-y1, x2-x1);
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2-h*Math.cos(angle-Math.PI/6), y2-h*Math.sin(angle-Math.PI/6));
+            ctx.lineTo(x2-h*Math.cos(angle+Math.PI/6), y2-h*Math.sin(angle+Math.PI/6));
+            ctx.fill();
+        }
+
+        function animate() {
+            if (!isAnimating) return;
+            let L = parseFloat(inpL.value);
+            let x = parseFloat(inpX.value);
+            x += 0.05 * animDir;
+            if (x >= L || x <= 0) animDir *= -1;
+            inpX.value = x;
+            calculate();
+            requestAnimationFrame(animate);
+        }
+
+        btnAnim.onclick = () => {
+            isAnimating = !isAnimating;
+            btnAnim.innerText = isAnimating ? "إيقاف المحاكاة" : "تشغيل المحاكاة الحركية";
+            btnAnim.classList.toggle('bg-red-600', isAnimating);
+            if(isAnimating) animate();
+        };
+
+        [inpL, inpP, inpW, inpX, inpSection].forEach(el => el.oninput = calculate);
+        
+        // Initial Run
+        calculate();
+    </script>
+</body>
+</html>
